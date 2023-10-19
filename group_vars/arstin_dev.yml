@@ -1,0 +1,3 @@
+# 172.16.202.7, 212.6.5.214
+nginx_app_conf: arstin_dev-nginx_app.conf.j2
+mysql_root_password: 'DevA81sa+mysql'

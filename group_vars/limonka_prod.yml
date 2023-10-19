@@ -1,0 +1,3 @@
+# nginx_app_conf - шаблон конфига в который подставляется app
+nginx_app_conf: limonka_prod-nginx_app.conf.j2
+mysql_root_password: 'Woku4#5!Mage'

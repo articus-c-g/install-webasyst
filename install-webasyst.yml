@@ -1,0 +1,80 @@
+---
+- hosts: all
+  user: root
+  gather_facts: false
+  vars_prompt:
+    - name: app_pass
+      prompt: Пароль пользователя mysql с правами к БД {{ app }}
+      private: false
+    - name: listen_port
+      prompt: '/etc/nginx/sites-available/{{ app }}.conf => listen:'
+      private: false
+  tasks:
+    - name: 'Создание папки для приложения {{ app }}'
+      ansible.builtin.file:
+        path: '/var/www/{{ app }}/'
+        state: directory
+        owner: nginx
+        group: nginx
+        mode: '0755'
+    - name: 'Загрузка и распаковка webasyst framework в /var/www/{{ app }}'
+      ansible.builtin.unarchive:
+        src: https://www.webasyst.com/download/framework/
+        dest: '/var/www/{{ app }}'
+        owner: nginx
+        group: nginx
+        mode: '0755'
+        remote_src: yes
+    - name: 'Установка зависимостей для модуля community.mysql (python-PyMySQL)'
+      ansible.builtin.yum:
+        name:
+          - python3-PyMySQL
+    - name: Удаляем БД '{{ app }}' если она существует
+      community.mysql.mysql_db:
+        name: '{{ app }}'
+        login_user: root
+        login_password: '{{ mysql_root_password }}'
+        state: absent
+    - name: Создание БД '{{ app }}'
+      mysql_db:
+        name: '{{ app }}'
+        login_user: root
+        login_password: '{{ mysql_root_password }}'
+        state: present
+    - name: Создание пользователя {{ app }}
+      community.mysql.mysql_user:
+        name: '{{ app }}'
+        host: '%'
+        password: '{{ app_pass }}'
+        login_password: '{{ mysql_root_password }}'
+        login_user: 'root'
+        priv: '{{ app }}.*:ALL,GRANT'
+        state: present
+    - file:
+        state: directory
+        path: /etc/nginx/sites-available
+        group: root
+        owner: root
+        mode: 0775
+    - file:
+        state: directory
+        path: /etc/nginx/sites-enabled
+        group: root
+        owner: root
+        mode: 0775
+    - name: 'Создание конфигурации сайта /etc/nginx/sites-available/{{ app }}.conf'
+      ansible.builtin.template:
+        src: '{{ nginx_app_conf }}'
+        dest: '/etc/nginx/sites-available/{{ app }}.conf'
+      notify: Перезапуск nginx
+    - name: 'Создание симлинка /etc/nginx/sites-enabled/{{ app }}.conf'
+      file:
+        state: link
+        src: '/etc/nginx/sites-available/{{ app }}.conf'
+        dest: '/etc/nginx/sites-enabled/{{ app }}.conf'
+      notify: Перезапуск nginx
+  handlers:
+    - name: Перезапуск nginx
+      ansible.builtin.service:
+        name: nginx
+        state: restarted

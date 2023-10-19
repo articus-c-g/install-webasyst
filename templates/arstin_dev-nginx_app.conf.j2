@@ -1,0 +1,109 @@
+server {
+    listen 8080;
+  
+    server_name {{ app }};
+    root /var/www/{{ app }}/;
+    index index.php;
+
+    access_log /var/log/nginx/{{ app }}.access.log;
+    error_log /var/log/nginx/{{ app }}.error.log;
+
+    try_files $uri $uri/ /index.php?$query_string;
+
+
+    location /index.php {
+
+        include fastcgi_params;
+
+        fastcgi_buffer_size 10240k;
+        fastcgi_buffers 4 10240k;
+
+        fastcgi_pass unix:/run/php-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param SERVER_NAME localhost;
+
+    }
+
+    # for install only
+    location /install.php {
+        include fastcgi_params;
+        fastcgi_pass unix:/run/php-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param SERVER_NAME localhost;
+    }
+
+    location /api.php {
+        include fastcgi_params;
+        fastcgi_pass unix:/run/php-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    } 
+
+    location ^~ /wa-data/protected/ {
+        #return 403;
+        #X-Accel-Redirect  
+        internal;
+    }
+
+    location ~* ^/wa-(log|config|cache|system)/ {
+        return 403;
+    }
+
+    location ~* ^/wa-data/public/contacts/photos/[0-9]+/ {
+         access_log off;
+         expires  30d;
+         error_page   404  =  @contacts_thumb;
+    }
+
+    location @contacts_thumb {
+        fastcgi_pass unix:/run/php-fpm.sock;
+        fastcgi_param  SCRIPT_NAME  /wa-data/public/contacts/photos/thumb.php;
+        fastcgi_param  SCRIPT_FILENAME  $document_root/wa-data/public/contacts/photos/thumb.php;
+    }
+
+    # photos app
+    location ~* ^/wa-data/public/photos/[0-9]+/ {
+        access_log   off;
+        expires      30d;
+        error_page   404  =  @photos_thumb;
+    }
+
+    location @photos_thumb {
+        fastcgi_pass unix:/run/php-fpm.sock;
+        fastcgi_param  SCRIPT_NAME  /wa-data/public/photos/thumb.php;
+        fastcgi_param  SCRIPT_FILENAME  $document_root/wa-data/public/photos/thumb.php;
+    }
+    # end photos app
+
+    # shop app
+    location ~* ^/wa-data/public/shop/products/[0-9]+/ {
+        access_log   off;
+        expires      30d;
+        error_page   404  =  @shop_thumb;
+    }
+
+    location @shop_thumb {
+        fastcgi_pass unix:/run/php-fpm.sock;
+        fastcgi_param  SCRIPT_NAME  /wa-data/public/shop/products/thumb.php;
+        fastcgi_param  SCRIPT_FILENAME  $document_root/wa-data/public/shop/products/thumb.php;
+    }
+    # end shop app
+
+    # mailer app
+    location ~* ^/wa-data/public/mailer/files/[0-9]+/ {
+        access_log   off;
+        error_page   404  =  @mailer_file;
+    }
+
+    location @mailer_file {
+        fastcgi_pass unix:/run/php-fpm.sock;
+        fastcgi_param  SCRIPT_NAME  /wa-data/public/mailer/files/file.php;
+        fastcgi_param  SCRIPT_FILENAME $document_root/wa-data/public/mailer/files/file.php;
+    }
+    # end mailer app
+
+    location ~* ^.+\.(jpg|jpeg|gif|png|js|css)$ {
+        access_log   off;
+        expires      30d;
+    }
+
+}
