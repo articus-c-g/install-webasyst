@@ -15,7 +15,7 @@ echo skip-log-bin
 
 if [ -z "$app" ]; then
   echo "installwa ip app"
-  echo "  ip - адрес веб сервера из списка в ini файле www-servers.ini"
+  echo "  ip - адрес веб сервера из списка в ini файле webasyst-servers.ini"
   echo "  app - название приложения (используется как папка webasys, бд mysql, пользователь mysql с правами для этой БД"
   exit
 fi
