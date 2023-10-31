@@ -1,22 +1,27 @@
 #!/bin/bash
 
+source bashlib.bashrc # Импорт общих функций и переменнх
+
 ip=$1
 app=$2
-echo TODO:
-echo [mysqld]
-echo default_authentication_plugin = mysql_native_password
-echo validate_password.policy=1
-echo validate_password.length=1
-echo validate_password.number_count=0
-echo validate_password.mixed_case_count=0
-echo validate_password.special_char_count=0
-echo validate_password.check_user_name=1
-echo skip-log-bin
+server_name=$3
 
-if [ -z "$app" ]; then
-  echo "installwa ip app"
-  echo "  ip - адрес веб сервера из списка в ini файле webasyst-servers.ini"
-  echo "  app - название приложения (используется как папка webasys, бд mysql, пользователь mysql с правами для этой БД"
-  exit
-fi
-ansible-playbook -i webasyst-servers.ini --limit=$ip --extra-vars app=$app install-webasyst.yml
+
+while [[ -z "$ip" ]]; do 
+  printf "ip адрес веб сервера на который будет установлено приложение: " 
+  read ip
+done
+
+while [[ -z "$app" ]]; do
+  printf "Название веб приложения (подпапки в /var/www/): " 
+  read app
+done
+
+while [[ -z "$server_name" ]]; do
+  printf "server_name (например $YELLOW$app.example.com$NOCOLOR): " 
+  read server_name
+done
+
+ansible-playbook -i webasyst-servers.ini --limit=$ip install-webasyst.yml \
+  --extra-vars app="$app" \
+  --extra-vars server_name="$server_name" 

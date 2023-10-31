@@ -6,13 +6,17 @@
     - name: app_pass
       prompt: Пароль пользователя mysql с правами к БД {{ app }}
       private: false
-    - name: listen_port
-      prompt: '/etc/nginx/sites-available/{{ app }}.conf => listen:'
-      private: false
   tasks:
     - name: 'Создание папки для приложения {{ app }}'
       ansible.builtin.file:
         path: '/var/www/{{ app }}/'
+        state: directory
+        owner: nginx
+        group: nginx
+        mode: '0755'
+    - name: 'Создание папки для log файлов /var/log/nginx/{{ app }}'
+      ansible.builtin.file:
+        path: '/var/log/nginx/{{ app }}/'
         state: directory
         owner: nginx
         group: nginx
